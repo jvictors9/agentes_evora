@@ -104,7 +104,7 @@ async def manus_create_task(prompt: str) -> Optional[str]:
         r = await client.post(
             f"{MANUS_BASE_URL}/task.create",
             headers=_manus_headers(),
-            json={"prompt": prompt, "agent_profile": MANUS_AGENT_PROFILE},
+            json={"message": {"content": prompt}, "agent_profile": MANUS_AGENT_PROFILE},
         )
         if r.status_code >= 400:
             # Mostra EXATAMENTE o que o Manus reclamou (motivo do 400/401/etc.)
@@ -118,12 +118,11 @@ async def manus_create_task(prompt: str) -> Optional[str]:
 
 
 async def manus_send_message(task_id: str, prompt: str) -> bool:
-    # OBS: confirme o nome do campo do corpo ("message") no API Reference.
     try:
         r = await client.post(
             f"{MANUS_BASE_URL}/task.sendMessage",
             headers=_manus_headers(),
-            json={"task_id": task_id, "message": prompt},
+            json={"task_id": task_id, "message": {"content": prompt}},
         )
         if r.status_code >= 400:
             logger.error("Manus task.sendMessage %s -> resposta: %s", r.status_code, r.text)
