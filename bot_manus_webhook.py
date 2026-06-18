@@ -44,6 +44,9 @@ TELEGRAM_SECRET_TOKEN = os.environ.get("TELEGRAM_SECRET_TOKEN", "")  # do setWeb
 MANUS_API_KEY = os.environ["MANUS_API_KEY"]
 MANUS_BASE_URL = os.environ.get("MANUS_BASE_URL", "https://api.manus.ai/v2")
 MANUS_AGENT_PROFILE = os.environ.get("MANUS_AGENT_PROFILE", "manus-1.6-lite")
+# ID do projeto no Manus: aplica automaticamente as instruções/personalidade do
+# seu agente configurado. Vazio = usa o Manus genérico.
+MANUS_PROJECT_ID = os.environ.get("MANUS_PROJECT_ID", "")
 
 # URL pública COMPLETA do endpoint /manus/webhook (precisa bater com a assinatura)
 PUBLIC_MANUS_WEBHOOK_URL = os.environ.get("PUBLIC_MANUS_WEBHOOK_URL", "")
@@ -101,10 +104,14 @@ def _manus_headers():
 
 async def manus_create_task(prompt: str) -> Optional[str]:
     try:
+        body = {"message": {"content": prompt}, "agent_profile": MANUS_AGENT_PROFILE}
+        if MANUS_PROJECT_ID:
+            # Associa a tarefa ao projeto -> aplica as instruções do seu agente
+            body["project_id"] = MANUS_PROJECT_ID
         r = await client.post(
             f"{MANUS_BASE_URL}/task.create",
             headers=_manus_headers(),
-            json={"message": {"content": prompt}, "agent_profile": MANUS_AGENT_PROFILE},
+            json=body,
         )
         if r.status_code >= 400:
             # Mostra EXATAMENTE o que o Manus reclamou (motivo do 400/401/etc.)
