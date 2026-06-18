@@ -104,7 +104,12 @@ def _manus_headers():
 
 async def manus_create_task(prompt: str) -> Optional[str]:
     try:
-        body = {"message": {"content": prompt}, "agent_profile": MANUS_AGENT_PROFILE}
+        body = {
+            "message": {"content": prompt},
+            "agent_profile": MANUS_AGENT_PROFILE,
+            # Evita poluir a lista de tarefas do Manus com cada mensagem do Telegram
+            "hide_in_task_list": True,
+        }
         if MANUS_PROJECT_ID:
             # Associa a tarefa ao projeto -> aplica as instruções do seu agente
             body["project_id"] = MANUS_PROJECT_ID
@@ -126,10 +131,14 @@ async def manus_create_task(prompt: str) -> Optional[str]:
 
 async def manus_send_message(task_id: str, prompt: str) -> bool:
     try:
+        body = {"task_id": task_id, "message": {"content": prompt}}
+        if MANUS_PROJECT_ID:
+            # Mantém a persona/instruções do agente também na continuação
+            body["project_id"] = MANUS_PROJECT_ID
         r = await client.post(
             f"{MANUS_BASE_URL}/task.sendMessage",
             headers=_manus_headers(),
-            json={"task_id": task_id, "message": {"content": prompt}},
+            json=body,
         )
         if r.status_code >= 400:
             logger.error("Manus task.sendMessage %s -> resposta: %s", r.status_code, r.text)
