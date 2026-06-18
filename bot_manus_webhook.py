@@ -106,7 +106,10 @@ async def manus_create_task(prompt: str) -> Optional[str]:
             headers=_manus_headers(),
             json={"prompt": prompt, "agent_profile": MANUS_AGENT_PROFILE},
         )
-        r.raise_for_status()
+        if r.status_code >= 400:
+            # Mostra EXATAMENTE o que o Manus reclamou (motivo do 400/401/etc.)
+            logger.error("Manus task.create %s -> resposta: %s", r.status_code, r.text)
+            return None
         d = r.json()
         return d.get("task_id") or d.get("task_detail", {}).get("task_id")
     except Exception as e:  # noqa: BLE001
@@ -122,6 +125,8 @@ async def manus_send_message(task_id: str, prompt: str) -> bool:
             headers=_manus_headers(),
             json={"task_id": task_id, "message": prompt},
         )
+        if r.status_code >= 400:
+            logger.error("Manus task.sendMessage %s -> resposta: %s", r.status_code, r.text)
         return r.status_code < 300
     except Exception as e:  # noqa: BLE001
         logger.error("Erro ao continuar tarefa no Manus: %s", e)
